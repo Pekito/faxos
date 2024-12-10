@@ -111,3 +111,14 @@ let ``execute phase 1 - proposer reaches quorum and acceptors have different val
     | Some (updatedAccetor, currentValue) ->
         currentValue |> should equal expectedResultValue
         updatedAccetor.AcceptorPromisesReceived |> should equal (Set.ofList [1;2])
+
+
+[<Fact>]
+let ``execute phase 1 - quorum exceeds expectations`` () =
+    let proposer = createProposer 1 2
+
+    let acceptors = [createAcceptor 1; createAcceptor 2; createAcceptor 3; createAcceptor 4; createAcceptor 5]
+    let proposalId = 1
+
+    let result = executePhase1 proposer proposalId acceptors
+    result.IsSome |> should equal true
