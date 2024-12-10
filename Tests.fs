@@ -138,8 +138,8 @@ let ``execute phase 2 - quorum reached`` () =
     let updatedAcceptors = executePhase2 phase1Result acceptors
 
     updatedAcceptors
-    |> List.filter (fun a -> a.AcceptedValue = Some "testValue")
-    |> List.length
+    |> Seq.filter (fun a -> a.AcceptedValue = Some "testValue")
+    |> Seq.length
     |> should equal 2
 
 [<Fact>]
@@ -158,8 +158,8 @@ let ``execute phase 2 - mixed acceptors, quorum reached`` () =
     let updatedAcceptors = executePhase2 phase1Result acceptors
 
     updatedAcceptors
-    |> List.filter (fun a -> a.AcceptedValue = Some "testValue")
-    |> List.length
+    |> Seq.filter (fun a -> a.AcceptedValue = Some "testValue")
+    |> Seq.length
     |> should equal 2
 
 [<Fact>]
@@ -177,7 +177,7 @@ let ``execute phase 2 - no highest accepted value from phase 1`` () =
     let updatedAcceptors = executePhase2 phase1Result acceptors
 
     updatedAcceptors
-    |> List.forall (fun a -> a.AcceptedValue = None)
+    |> Seq.forall (fun a -> a.AcceptedValue = None)
     |> should equal true
 
 [<Fact>]
@@ -204,5 +204,5 @@ let ``execute phase 2 - acceptors with different highest proposals and values`` 
     }
     let updatedAcceptors = executePhase2 phase1Result acceptors
     updatedAcceptors
-    |> List.forall (fun x -> x.AcceptedValue = Some "ChosenValue")
+    |> Seq.forall (fun x -> x.AcceptedValue = Some "ChosenValue")
     |> should equal true

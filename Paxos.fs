@@ -64,7 +64,7 @@ let executePhase1
     proposer proposalId acceptors =
     let promises =
         acceptors 
-            |> List.choose (fun x -> handlePrepare proposalId x)
+            |> Seq.choose (fun x -> handlePrepare proposalId x)
     
     let updatedProposer = 
         {
@@ -72,16 +72,16 @@ let executePhase1
                 CurrentProposalId = proposalId
                 AcceptorPromisesReceived =
                     (promises) 
-                    |> List.map (fun x -> x.UpdatedAcceptor)
-                    |> Set.ofList
+                    |> Seq.map (fun x -> x.UpdatedAcceptor)
+                    |> Set.ofSeq
         }
     if(not (hasAchievedQuorum updatedProposer)) then None
     else 
         let highestAcceptedValue =
             promises
-            |> List.filter (fun (x) -> Option.isSome x.UpdatedAcceptor.AcceptedValue)
-            |> List.sortByDescending (fun x -> x.ProposalId)
-            |> List.tryHead
+            |> Seq.filter (fun (x) -> Option.isSome x.UpdatedAcceptor.AcceptedValue)
+            |> Seq.sortByDescending (fun x -> x.ProposalId)
+            |> Seq.tryHead
             |> Option.bind (fun x -> x.AcceptedValue)
         Some {
             HighestAcceptedValue = highestAcceptedValue
@@ -95,7 +95,7 @@ let executePhase2 (valueFromPhase1: ExecutePhase1Result) acceptors =
     | Some value ->
         let updatedAcceptors = 
             acceptors
-            |> List.map (fun acceptor -> 
+            |> Seq.map (fun acceptor -> 
                 match handleAccept valueFromPhase1.UpdatedProposer.CurrentProposalId value acceptor with
                 | Some updatedAcceptor -> 
                     updatedAcceptor
