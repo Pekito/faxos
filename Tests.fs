@@ -18,9 +18,9 @@ let ``Handle Prepare - Proposal Accepted`` () =
     let result = handlePrepare 5 acceptor
     match result with
     | None -> failwith "Expected to Accept"
-    | Some (acceptor, value) -> 
-        acceptor.AcceptorId |> should equal 1
-        value |> should equal None
+    | Some res ->
+        res.UpdatedAcceptor.HighestProposalId |> should equal 5
+        res.AcceptedValue |> should equal None
 
 [<Fact>]
 let ``Handle Prepare - Proposal Rejected`` () =
@@ -74,9 +74,9 @@ let ``execute phase 1 - proposer reaches quorum and acceptors does not have valu
     let result = executePhase1 proposer proposalId acceptors
     match result with
     | None -> failwith "Expected a result"
-    | Some (updatedAccetor, currentValue) ->
-        currentValue |> should equal None
-        updatedAccetor.AcceptorPromisesReceived |> should equal (Set.ofList [1;2])
+    | Some res ->
+        res.HighestAcceptedValue |> should equal None
+        res.UpdatedProposer.AcceptorPromisesReceived.Count |> should equal 2
 
 [<Fact>]
 let ``execute phase 1 - proposer reaches quorum and acceptors have the same value `` () =
@@ -90,9 +90,9 @@ let ``execute phase 1 - proposer reaches quorum and acceptors have the same valu
     let result = executePhase1 proposer proposalId acceptors
     match result with
     | None -> failwith "Expected a result"
-    | Some (updatedAccetor, currentValue) ->
-        currentValue |> should equal (Some "Pedro")
-        updatedAccetor.AcceptorPromisesReceived |> should equal (Set.ofList [1;2])
+    | Some res ->
+         res.HighestAcceptedValue |> should equal (Some "Pedro")
+         res.UpdatedProposer.AcceptorPromisesReceived.Count |> should equal 2
 
 [<Fact>]
 let ``execute phase 1 - proposer reaches quorum and acceptors have different values `` () =
@@ -108,9 +108,9 @@ let ``execute phase 1 - proposer reaches quorum and acceptors have different val
     let expectedResultValue = Some "Pires" // it should return the highest proposal id from the promise list
     match result with
     | None -> failwith "Expected a result"
-    | Some (updatedAccetor, currentValue) ->
-        currentValue |> should equal expectedResultValue
-        updatedAccetor.AcceptorPromisesReceived |> should equal (Set.ofList [1;2])
+    | Some res ->
+        res.HighestAcceptedValue |> should equal expectedResultValue
+        res.UpdatedProposer.AcceptorPromisesReceived.Count |> should equal 2
 
 
 [<Fact>]
@@ -122,3 +122,87 @@ let ``execute phase 1 - quorum exceeds expectations`` () =
 
     let result = executePhase1 proposer proposalId acceptors
     result.IsSome |> should equal true
+
+[<Fact>]
+let ``execute phase 2 - quorum reached`` () =
+    let proposer = createProposer 1 2
+    let acceptorOne = createAcceptor 1
+    let acceptorTwo = createAcceptor 2
+    let acceptors = [acceptorOne; acceptorTwo]
+
+    let phase1Result = {
+        UpdatedProposer = proposer
+        HighestAcceptedValue = Some "testValue"
+    }
+
+    let updatedAcceptors = executePhase2 phase1Result acceptors
+
+    updatedAcceptors
+    |> List.filter (fun a -> a.AcceptedValue = Some "testValue")
+    |> List.length
+    |> should equal 2
+
+[<Fact>]
+let ``execute phase 2 - mixed acceptors, quorum reached`` () =
+    let proposer = createProposer 1 2
+    let acceptorOne = createAcceptor 1
+    let acceptorTwo = createAcceptor 2 |> mockAcceptorHighestProposalId 5
+    let acceptorThree = createAcceptor 3
+    let acceptors = [acceptorOne; acceptorTwo; acceptorThree]
+
+    let phase1Result = {
+        UpdatedProposer = proposer
+        HighestAcceptedValue = Some "testValue"
+    }
+
+    let updatedAcceptors = executePhase2 phase1Result acceptors
+
+    updatedAcceptors
+    |> List.filter (fun a -> a.AcceptedValue = Some "testValue")
+    |> List.length
+    |> should equal 2
+
+[<Fact>]
+let ``execute phase 2 - no highest accepted value from phase 1`` () =
+    let proposer = createProposer 1 2
+    let acceptorOne = createAcceptor 1
+    let acceptorTwo = createAcceptor 2
+    let acceptors = [acceptorOne; acceptorTwo]
+
+    let phase1Result = {
+        UpdatedProposer = proposer
+        HighestAcceptedValue = None
+    }
+
+    let updatedAcceptors = executePhase2 phase1Result acceptors
+
+    updatedAcceptors
+    |> List.forall (fun a -> a.AcceptedValue = None)
+    |> should equal true
+
+[<Fact>]
+let ``execute phase 2 - acceptors with different highest proposals and values`` () =
+    let proposer = createProposer 1 2
+
+    // Acceptor 1: lower HighestProposalId, no AcceptedValue
+    let acceptorOne = createAcceptor 1 |> mockAcceptorHighestProposalId 2
+
+    // Acceptor 2: higher HighestProposalId, accepted a different value
+    let acceptorTwo = createAcceptor 2 
+                      |> mockAcceptorHighestProposalId 5 
+                      |> mockAcceptorValue "OtherValue"
+
+    // Acceptor 3: no previous AcceptedValue
+    let acceptorThree = createAcceptor 3
+
+    let acceptors = [acceptorOne; acceptorTwo; acceptorThree]
+
+    // Phase 1 result: Proposer's CurrentProposalId is used with "ChosenValue"
+    let phase1Result = {
+        UpdatedProposer = { proposer with CurrentProposalId = 10 }
+        HighestAcceptedValue = Some "ChosenValue"
+    }
+    let updatedAcceptors = executePhase2 phase1Result acceptors
+    updatedAcceptors
+    |> List.forall (fun x -> x.AcceptedValue = Some "ChosenValue")
+    |> should equal true
