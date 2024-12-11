@@ -42,7 +42,7 @@ let createProposer proposerId quorumSize =
 let hasAchievedQuorum proposer =
     Set.count proposer.AcceptorPromisesReceived >= proposer.QuorumSize
 let handlePrepare proposalId acceptor =
-    if proposalId > acceptor.HighestProposalId then
+    if proposalId > acceptor.PromisedProposedId then
         Some {
             UpdatedAcceptor = {
                 acceptor with 
@@ -54,10 +54,11 @@ let handlePrepare proposalId acceptor =
         None
 
 let handleAccept proposalId value acceptor =
-    if proposalId >= acceptor.HighestProposalId then
+    if proposalId >= acceptor.PromisedProposedId then
         let updatedAcceptor = 
             { acceptor with 
                 HighestProposalId = proposalId
+                PromisedProposedId = proposalId
                 AcceptedValue = Some value }
         Some (updatedAcceptor)
     else

@@ -7,6 +7,10 @@ let mockAcceptorHighestProposalId newId (acceptor: Acceptor)  =
     {
         acceptor with HighestProposalId = newId
     }
+let mockAcceptorPromisedProposedId newId (acceptor: Acceptor)  =
+    {
+        acceptor with PromisedProposedId = newId
+    }
 let mockAcceptorValue newValue (acceptor: Acceptor)  =
     {
         acceptor with AcceptedValue = Some newValue
@@ -24,7 +28,7 @@ let ``Handle Prepare - Proposal Accepted`` () =
 
 [<Fact>]
 let ``Handle Prepare - Proposal Rejected`` () =
-    let acceptor = { createAcceptor 1 with HighestProposalId = 10 }
+    let acceptor = { createAcceptor 1 with PromisedProposedId = 10 }
     let result = handlePrepare 5 acceptor
     result |> should equal None
 
@@ -42,7 +46,7 @@ let ``Handle Accept - Proposal Accepted`` () =
 
 [<Fact>]
 let ``Handle Accept - Proposal Rejected`` () =
-    let acceptor = { createAcceptor 1 with HighestProposalId = 10 }
+    let acceptor = { createAcceptor 1 with PromisedProposedId = 10 }
     let proposalId = 5
     let value = "testValue"
     let result = handleAccept proposalId value acceptor
@@ -53,8 +57,8 @@ let ``execute phase 1 - proposer does not reach quorum`` () =
     let proposer = createProposer 1 2
 
 
-    let acceptorOne = mockAcceptorHighestProposalId  5 (createAcceptor 1)
-    let acceptorTwo = mockAcceptorHighestProposalId  5 (createAcceptor 2)
+    let acceptorOne = mockAcceptorPromisedProposedId  5 (createAcceptor 1)
+    let acceptorTwo = mockAcceptorPromisedProposedId  5 (createAcceptor 2)
 
     let acceptors = [acceptorOne; acceptorTwo]
     let proposalId = 1
@@ -147,7 +151,7 @@ let ``execute phase 2 - quorum reached`` () =
 let ``execute phase 2 - mixed acceptors, quorum reached`` () =
     let proposer = createProposer 1 2
     let acceptorOne = createAcceptor 1
-    let acceptorTwo = createAcceptor 2 |> mockAcceptorHighestProposalId 5
+    let acceptorTwo = createAcceptor 2 |> mockAcceptorPromisedProposedId 5
     let acceptorThree = createAcceptor 3
     let acceptors = [acceptorOne; acceptorTwo; acceptorThree]
 
