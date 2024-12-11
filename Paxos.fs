@@ -7,6 +7,7 @@ type ProposalId = int
 type Acceptor = {
     AcceptorId: AcceptorId
     HighestProposalId: ProposalId
+    PromisedProposedId: ProposalId
     AcceptedValue: ProposalValue option
 }
 type Proposer = {
@@ -16,7 +17,6 @@ type Proposer = {
     QuorumSize: int // Number of Promises Required to go to phase 2
 }
 type HandlePrepareResult = {
-    ProposalId: ProposalId;
     UpdatedAcceptor: Acceptor;
     AcceptedValue: ProposalValue option
 }
@@ -28,6 +28,7 @@ let createAcceptor acceptorId =
     {
         AcceptorId = acceptorId
         HighestProposalId = 0
+        PromisedProposedId = 0
         AcceptedValue = None
     }
 let createProposer proposerId quorumSize =
@@ -43,8 +44,10 @@ let hasAchievedQuorum proposer =
 let handlePrepare proposalId acceptor =
     if proposalId > acceptor.HighestProposalId then
         Some {
-            UpdatedAcceptor = {acceptor with HighestProposalId = proposalId}
-            ProposalId = acceptor.HighestProposalId
+            UpdatedAcceptor = {
+                acceptor with 
+                    PromisedProposedId = proposalId
+                }
             AcceptedValue = acceptor.AcceptedValue
         }
     else
@@ -80,7 +83,7 @@ let executePhase1
         let highestAcceptedValue =
             promises
             |> Seq.filter (fun (x) -> Option.isSome x.UpdatedAcceptor.AcceptedValue)
-            |> Seq.sortByDescending (fun x -> x.ProposalId)
+            |> Seq.sortByDescending (fun x -> x.UpdatedAcceptor.HighestProposalId)
             |> Seq.tryHead
             |> Option.bind (fun x -> x.AcceptedValue)
         Some {

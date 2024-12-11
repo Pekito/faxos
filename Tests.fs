@@ -19,7 +19,7 @@ let ``Handle Prepare - Proposal Accepted`` () =
     match result with
     | None -> failwith "Expected to Accept"
     | Some res ->
-        res.UpdatedAcceptor.HighestProposalId |> should equal 5
+        res.UpdatedAcceptor.PromisedProposedId |> should equal 5
         res.AcceptedValue |> should equal None
 
 [<Fact>]
@@ -111,6 +111,7 @@ let ``execute phase 1 - proposer reaches quorum and acceptors have different val
     | Some res ->
         res.HighestAcceptedValue |> should equal expectedResultValue
         res.UpdatedProposer.AcceptorPromisesReceived.Count |> should equal 2
+
 
 
 [<Fact>]
