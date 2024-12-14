@@ -138,16 +138,3 @@ let propose proposerNode proposalValue acceptorNodes =
                 printfn "Phase 2 failed: value '%s' not accepted by quorum." valueToPropose
                 return None
     }
-
-
-let proposer = createNode (createProposer 1 3) 100 2 30
-let acceptors =
-    [| for i in 1..5 -> createNode (createAcceptor i) 100 2 30 |]
-
-let proposalValue = "ValueA"
-let result = propose proposer proposalValue acceptors |> Async.RunSynchronously
-
-match result with
-| Some value -> printfn "Simulation succeeded with value: %s" value
-| None -> printfn "Simulation failed."
-
