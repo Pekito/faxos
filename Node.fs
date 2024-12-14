@@ -74,6 +74,7 @@ let handleNodePhase1
                         |> Set.ofSeq
             }
         if (not (hasAchievedQuorum updatedProposer)) then return None
+        elif (proposerNode.Value.CurrentProposalId > proposalId) then return None
         else
             proposerNode.Value <- {proposerNode.Value with CurrentProposalId = proposalId}
             let highestAcceptedValue =
@@ -116,9 +117,10 @@ let propose proposerNode proposalValue acceptorNodes =
         let! phase1Result = handleNodePhase1 proposerNode proposalId acceptorNodes
         match phase1Result with
         | None ->
-            printfn "Phase 1 failed: quorum not achieved."
+            printfn "Phase 1 Failed (Proposal %A): Quorum not achieved." proposalId
             return None
         | Some phase1Result ->
+            printfn "Phase 1 Accepted (Proposal %A)" proposalId
             let valueToPropose =
                 match phase1Result.HighestAcceptedValue with
                 | None -> proposalValue
@@ -132,9 +134,9 @@ let propose proposerNode proposalValue acceptorNodes =
                 |> Seq.length
 
             if isAccepted >= proposerNode.Value.QuorumSize then
-                printfn "Proposal %d with value '%s' accepted by quorum." proposalId valueToPropose
+                printfn "Phase 2 Accepted (Proposal %A): Accepted with value %A" proposalId valueToPropose
                 return Some valueToPropose
             else
-                printfn "Phase 2 failed: value '%s' not accepted by quorum." valueToPropose
+                printfn "Phase 2 Failed (Proposal %A): value '%s' not accepted by quorum." proposalId valueToPropose
                 return None
     }
